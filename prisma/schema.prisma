@@ -1,0 +1,434 @@
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  M
+  F
+}
+
+
+model User {
+  id Int @id @default(autoincrement())
+  name String
+  last_name String
+  email String @unique
+  password String
+  cuil Int @unique
+  gender Gender? 
+  phone Int @unique
+  facultyId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  faculty Faculty @relation(fields: [facultyId], references: [id])
+
+  student Student?
+  authority Authority?
+
+  @@map("users")
+}
+
+
+model Student {
+  id Int @id @default(autoincrement())
+  user User @relation(fields: [user_id], references: [id])
+  user_id Int @unique
+  file Int
+  career_id Int
+
+  career Career @relation(fields: [career_id], references: [id])
+
+  quealifications Qualification[]
+  courseRegistrations CourseRegistration[]
+  examRegistrations FinalExamRegistration[]
+
+  @@map("students")
+}
+
+
+model Authority {
+  id Int @id @default(autoincrement())
+  user_id Int @unique
+  tuition Int
+  recruitment DateTime
+
+  user User @relation(fields: [user_id], references: [id])
+
+  position AuthorityPosition[]
+  finalExam TeacherFinalExam[]
+  dictation TeacherSubjectDictation[]
+
+  @@map("authorities")
+}
+
+model AuthorityPosition {
+  authority_id Int
+  position_id Int
+
+  authority Authority @relation(fields: [authority_id], references: [id])
+  position Position @relation(fields: [position_id], references: [id])
+
+  @@id([authority_id, position_id])
+  @@map("authority-position")
+}
+
+model Position {
+  id Int @id @default(autoincrement())
+  name String
+  description String
+  puntaje Float
+  area String
+  category_id Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category PositionCategory @relation(fields: [category_id], references: [id])
+
+  authority AuthorityPosition[] 
+
+  @@map("positions")
+}
+
+model PositionCategory {
+  id Int @id @default(autoincrement())
+  name PositionCategories
+  description String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  positions Position[]
+
+  @@map("categories-position")
+}
+
+enum PositionCategories {
+  Teacher
+  Employee
+  Administrator
+  Owner 
+}
+
+model University {
+  id Int @id @default(autoincrement())
+  name String
+  acronym String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  faculty Faculty[]
+
+  @@map("universities")
+}
+
+model Faculty {
+  id Int @id @default(autoincrement())
+  name String
+  code Int
+  description String?
+  street String
+  email String @unique
+  number Int
+  phone Int @unique
+  web String?
+  cityId Int
+  university_id Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  city City @relation(fields: [cityId], references: [id])
+  university University @relation(fields: [university_id], references: [id])
+
+  educationalOffers EducationalOffer[]
+  classRooms ClassRoom[]
+  users User[]
+
+  @@map("faculties")
+}
+
+model City {
+  id Int @id @default(autoincrement())
+  name String
+  zip_code String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  faculty Faculty[]
+
+  @@map("cities")
+}
+
+model EducationalOffer {
+  id Int @id @default(autoincrement())
+  year Int
+  faculty_id Int
+  career_id Int
+  price Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  faculty Faculty @relation(fields: [faculty_id], references: [id])
+  career Career @relation(fields: [career_id], references: [id])
+
+  @@map("educational_offers")
+}
+
+
+enum Level {
+  Course
+  Engineering
+  Postgraduate
+  Technicality
+  Degree
+  Doctorate
+}
+
+model Career {
+  id Int @id @default(autoincrement())
+  name String
+  code Int @unique
+  level Level
+  description String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  educationalOffers EducationalOffer[]
+  studyPlans StudyPlan[]
+  students Student[]
+
+  @@map("careers")
+}
+
+
+model StudyPlan {
+  id Int @id @default(autoincrement())
+  description String
+  effective_from Int
+  code Int @unique
+  duration Int
+  career_id Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  career Career @relation(fields: [career_id], references: [id])
+
+  subjectInfo SubjectInfo[]
+  correlativities Correlativity[]
+
+  @@map("study_plans")
+}
+
+enum CourseState {
+  Irregular
+  Regular
+  Aprroved
+  Attending
+}
+
+
+model CourseRegistration {
+  id Int @id @default(autoincrement())
+  state CourseState 
+  student_id Int
+  dicatation_id Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student Student @relation(fields: [student_id], references: [id])
+  dictation SubjectDictation @relation(fields: [dicatation_id], references: [id])
+
+  @@map("course_registrations")
+}
+
+
+enum ExamState {
+  Disapproved
+  Aprroved
+  NotTaken
+}
+
+model FinalExamRegistration {
+  id Int @id @default(autoincrement())
+  qualification Int?
+  state ExamState
+  student_id Int
+  final_exam_id Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student Student @relation(fields: [student_id], references: [id])
+  exam FinalExam @relation(fields: [final_exam_id], references: [id])
+
+  @@map("final_exam_registrations")
+}
+
+
+
+model Subject {
+  id Int @id @default(autoincrement())
+  name String
+  code Int @unique
+  description String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subjectInfo SubjectInfo[]
+  correlativities Correlativity[] @relation("MainSubject")
+  required Correlativity[] @relation("CorrelativeSubject")
+  quealifications Qualification[]
+
+  @@map("subjects")
+}
+
+
+enum SubjectType {
+  HalfYearly
+  Yearly
+}
+
+model SubjectInfo {
+  id Int @id @default(autoincrement())
+  hours Int
+  type SubjectType
+  subject_id Int
+  study_plan_id Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subject Subject @relation(fields: [subject_id], references: [id])
+  studyPlan StudyPlan @relation(fields: [study_plan_id], references: [id])
+
+  finalExam FinalExam[]
+  dictation SubjectDictation[]
+
+  @@map("subjects_info")
+}
+
+enum TypeCorrelativie {
+  Attend
+  TakeExam
+}
+
+model Correlativity {
+  id Int @id @default(autoincrement())
+  course Boolean
+  aprrove Boolean
+  type TypeCorrelativie
+  subject_id Int
+  correlativitie_id Int
+  study_plan_id Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subject Subject @relation("MainSubject", fields: [subject_id], references: [id])
+  correlativity Subject @relation("CorrelativeSubject", fields: [correlativitie_id], references: [id])
+  studyPlan StudyPlan @relation(fields: [study_plan_id], references: [id])
+
+  @@map("correlativities")
+}
+
+
+model Qualification {
+  id Int @id @default(autoincrement())
+  value Int
+  student_id Int
+  subject_id Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student Student @relation(fields: [student_id], references: [id])
+  subject Subject @relation(fields: [subject_id], references: [id])
+
+  @@map("qualifications")
+}
+
+model FinalExam {
+  id Int @id @default(autoincrement())
+  date DateTime
+  subject_info_id Int
+  classroom_id Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subjectInfo SubjectInfo @relation(fields: [subject_info_id], references: [id])
+  classroom ClassRoom? @relation(fields: [classroom_id], references: [id])
+  
+  registrations FinalExamRegistration[]
+  teacher TeacherFinalExam[]
+
+  @@map("final_exams")
+}
+
+model TeacherFinalExam {
+  final_exam_id Int
+  teacher_id Int
+
+  finalExam FinalExam @relation(fields: [final_exam_id], references: [id])
+  teacher Authority @relation(fields: [teacher_id], references: [id])
+
+  @@id([final_exam_id, teacher_id])
+  @@map("teachers_finals_exams")
+}
+
+model SubjectDictation {
+  id Int @id @default(autoincrement())
+  year Int
+  subject_info_id Int
+  classroom_id Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subjectInfo SubjectInfo @relation(fields: [subject_info_id], references: [id])
+  classroom ClassRoom? @relation(fields: [classroom_id], references: [id])
+  
+  registrations CourseRegistration[]
+  teacher TeacherSubjectDictation[]
+
+  @@map("subjects_dictations")
+}
+
+model TeacherSubjectDictation {
+  teacher_id Int
+  dictation_id Int
+  
+  teacher Authority @relation(fields: [teacher_id], references: [id])
+  dictation SubjectDictation @relation(fields: [dictation_id], references: [id])
+
+  @@id([teacher_id, dictation_id])
+  @@map("teachers_subjects_dicatations")
+}
+
+model ClassRoom {
+  id Int @id @default(autoincrement())
+  name String
+  code Int
+  capacity Int
+  projector Boolean?
+  board Boolean?
+  air_conditioning Boolean?
+  heating Boolean?
+  wifi Boolean?
+  faculty_id Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subjectDictation SubjectDictation[]
+  finalExams FinalExam[]
+  
+  faculty Faculty @relation(fields: [faculty_id], references: [id])
+
+  @@map("class_rooms")
+}
